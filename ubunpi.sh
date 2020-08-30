@@ -195,7 +195,10 @@ setup_mpv()
     mkdir -p "$(dirname "${settings}")" && cat /dev/null > "${settings}"
     echo 'profile=gpu-hq' | tee -a "${settings}"
     echo 'hwdec=auto' | tee -a "${settings}"
+    echo 'interpolation=yes' | tee -a "${settings}"
     echo 'keep-open=yes' | tee -a "${settings}"
+    echo 'tscale=oversample' | tee -a "${settings}"
+    echo 'video-sync=display-resample' | tee -a "${settings}"
     echo 'ytdl-format="bestvideo[height<=?1080][vcodec!=vp9]+bestaudio/best"' | tee -a "${settings}"
 }
 
