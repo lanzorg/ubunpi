@@ -300,6 +300,9 @@ main()
     echo 'Installing and configuring postman...'
     setup_postman > /dev/null 2>&1
 
+    echo 'Installing and configuring vmware-workstation...'
+    setup_vmware_workstation > /dev/null 2>&1
+
     echo 'Installing and configuring vscodium...'
     setup_vscodium > /dev/null 2>&1
 
