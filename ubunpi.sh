@@ -46,7 +46,9 @@ setup_system()
     sudo systemctl enable --now fstrim.timer
 
     # Hide the dummy snap directory by default.
-    echo 'snap' | tee -a "${HOME}/.hidden"
+    if ! grep -Fxq 'snap' "${HOME}/.hidden"; then
+        echo 'snap' | tee -a "${HOME}/.hidden"
+    fi
 }
 
 setup_gnome()
@@ -74,17 +76,17 @@ setup_gnome()
     gsettings set org.gnome.shell.extensions.desktop-icons show-trash false
 
     # Make fonts little bit smaller.
-    gsettings set org.gnome.desktop.interface font-name 'Ubuntu 10'
-    gsettings set org.gnome.desktop.interface document-font-name 'Sans 10'
-    gsettings set org.gnome.desktop.interface monospace-font-name 'Ubuntu Mono 12'
-    gsettings set org.gnome.desktop.wm.preferences titlebar-font 'Ubuntu Bold 10'
-    gsettings set org.gnome.desktop.wm.preferences titlebar-uses-system-font false
+    # gsettings set org.gnome.desktop.interface font-name 'Ubuntu 10'
+    # gsettings set org.gnome.desktop.interface document-font-name 'Sans 10'
+    # gsettings set org.gnome.desktop.interface monospace-font-name 'Ubuntu Mono 12'
+    # gsettings set org.gnome.desktop.wm.preferences titlebar-font 'Ubuntu Bold 10'
+    # gsettings set org.gnome.desktop.wm.preferences titlebar-uses-system-font false
 
     # Change the default zoom level in nautilus.
     gsettings set org.gnome.nautilus.icon-view default-zoom-level 'large'
 
     # Pin my favorite applications.
-    gsettings set org.gnome.shell favorite-apps "['org.gnome.Nautilus.desktop', 'chromium.desktop', 'firefox.desktop', 'jdownloader2_JDownloader.desktop', 'org.qbittorrent.qBittorrent.desktop', 'postman.desktop', 'vmware-workstation.desktop', 'org.gnome.Terminal.desktop', 'codium.desktop', 'dbeaver.desktop', 'mpv.desktop']"
+    gsettings set org.gnome.shell favorite-apps "['org.gnome.Nautilus.desktop', 'chromium.desktop', 'firefox.desktop', 'org.qbittorrent.qBittorrent.desktop', 'postman.desktop', 'vmware-workstation.desktop', 'org.gnome.Terminal.desktop', 'code.desktop', 'dbeaver.desktop', 'mpv.desktop']"
 
     # Install the papirus-icon-theme package.
     sudo add-apt-repository -y ppa:papirus/papirus-dev
@@ -93,7 +95,7 @@ setup_gnome()
 
     # Configure the dash-to-dock extension.
     gsettings set org.gnome.shell.extensions.dash-to-dock click-action minimize
-    gsettings set org.gnome.shell.extensions.dash-to-dock dash-max-icon-size 32
+    # gsettings set org.gnome.shell.extensions.dash-to-dock dash-max-icon-size 32
 
     # Install the p7zip-full and unrar packages.
     sudo apt install -y p7zip-full unrar
@@ -123,6 +125,8 @@ setup_anaconda()
     curl -A 'Mozilla/5.0 (Linux x86_64; rv:80.0) Gecko/20100101 Firefox/80.0' -L "${address}" -o "${script}"
     bash "${script}" -b -p /opt/anaconda -u
     sudo ln -s /opt/anaconda/etc/profile.d/conda.sh /etc/profile.d/conda.sh
+    source /etc/profile
+    conda init bash
     source /etc/profile
     conda update --all -y
     conda config --set auto_activate_base false
@@ -169,28 +173,15 @@ setup_git()
     git config --global user.name 'anonymous'
 }
 
-setup_jdownloader()
-{
-    sudo snap install jdownloader2
-    sudo sed -i "s/Icon=.*/Icon=jdownloader/g" /var/lib/snapd/desktop/applications/jdownloader2_JDownloader.desktop
-    settings="${HOME}/snap/jdownloader2/common/cfg/org.jdownloader.settings.GraphicalUserInterfaceSettings.json"
-    jdownloader2.jdownloader > /dev/null 2>&1 &
-    sleep 5 && while [ ! -f "${settings}" ]; do sleep 2; done
-    pkill -f 'java -jar' && sleep 5
-    jdownloader2.jdownloader > /dev/null 2>&1 &
-    sleep 5 && pkill -f 'java -jar' && sleep 5
-    sed -i "s/\"bannerenabled\".*/\"bannerenabled\" : false,/g" "${settings}"
-    sed -i "s/\"myjdownloaderviewvisible\".*/\"myjdownloaderviewvisible\" : false,/g" "${settings}"
-    sed -i "s/\"speedmetervisible\".*/\"speedmetervisible\" : false,/g" "${settings}"
-}
-
 setup_mpv()
 {
     sudo add-apt-repository -y ppa:mc3man/mpv-tests
     sudo apt install -y mpv
     desktop='/usr/share/applications/mpv.desktop'
     sudo sed -i "s/Name=.*/Name=Mpv/g" "${desktop}"
-    if grep -Fxq "[Desktop Action Help]" "${desktop}"; then head -n -53 "${desktop}" | sudo tee "${desktop}.tmp" && sudo mv "${desktop}.tmp" "${desktop}" fi
+    if grep -Fxq "[Desktop Action Help]" "${desktop}"; then 
+        head -n -53 "${desktop}" | sudo tee "${desktop}.tmp" && sudo mv "${desktop}.tmp" "${desktop}"
+    fi
     settings="$HOME/.config/mpv/mpv.conf"
     mkdir -p "$(dirname "${settings}")" && cat /dev/null > "${settings}"
     echo 'profile=gpu-hq' | tee -a "${settings}"
@@ -213,7 +204,9 @@ setup_postman()
     sudo add-apt-repository -y ppa:tiagohillebrandt/postman
     sudo apt install -y postman
     sudo sed -i 's/Icon=.*/Icon=postman/' /usr/share/applications/postman.desktop
-    if ! grep -Fxq 'Postman' "${HOME}/.hidden"; then echo 'Postman' | tee -a "${HOME}/.hidden" fi
+    if ! grep -Fxq 'Postman' "${HOME}/.hidden"; then
+        echo 'Postman' | tee -a "${HOME}/.hidden"
+    fi
 }
 
 setup_qbittorrent()
@@ -249,20 +242,25 @@ setup_vmware_workstation()
     cd "${HOME}"
 }
 
-setup_vscodium()
+setup_visual_studio_code()
 {
-    curl -s https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg | sudo apt-key add -
-    echo 'deb https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/repos/debs/ vscodium main' | sudo tee /etc/apt/sources.list.d/vscodium.list
-    sudo apt update && sudo apt install -y codium
-    sudo sed -i 's/Icon=.*/Icon=vscodium/' /usr/share/applications/codium.desktop
-    codium --install-extension github.github-vscode-theme
-    settings="${HOME}/.config/VSCodium/User/settings.json"
-    mkdir -p "$(dirname "${settings}")" && cat /dev/null > "${settings}"
+    if ! [ -x "$(command -v code)" ]; then
+        address='https://update.code.visualstudio.com/latest/linux-deb-x64/stable'
+        package="$(mktemp -d)/code_latest_amd64.deb"
+        curl -A 'Mozilla/5.0 (Linux x86_64; rv:80.0) Gecko/20100101 Firefox/80.0' -L "${address}" -o "${package}"
+        sudo apt install -y "${package}"
+    fi
+    sudo sed -i "s/Icon=.*/Icon=visual-studio-code/g" /usr/share/applications/code.desktop
+    code --install-extension github.github-vscode-theme
+    settings="${HOME}/.config/Code/User/settings.json"
+    mkdir -p "$(dirname "${settings}")" && cat /dev/null | tee "${settings}"
     echo '{' | tee -a "${settings}"
     echo '    "editor.fontFamily": "Ubuntu Mono, monospace",' | tee -a "${settings}"
-    echo '    "editor.fontSize": 16,' | tee -a "${settings}"
+    echo '    "editor.fontSize": 14,' | tee -a "${settings}"
     echo '    "editor.lineHeight": 30,' | tee -a "${settings}"
     echo '    "window.menuBarVisibility": "toggle",' | tee -a "${settings}"
+    echo '    "telemetry.enableTelemetry": false,' | tee -a "${settings}"
+    echo '    "telemetry.enableCrashReporter": false,' | tee -a "${settings}"
     echo '    "workbench.colorTheme": "GitHub Dark"' | tee -a "${settings}"
     echo '}' | tee -a "${settings}"
 }
@@ -303,17 +301,14 @@ main()
     echo 'Installing and configuring vmware-workstation...'
     setup_vmware_workstation > /dev/null 2>&1
 
-    echo 'Installing and configuring vscodium...'
-    setup_vscodium > /dev/null 2>&1
+    echo 'Installing and configuring visual-studio-code...'
+    setup_visual_studio_code > /dev/null 2>&1
 
     echo 'Installing and configuring ungoogled-chromium...'
     setup_ungoogled_chromium > /dev/null 2>&1
 
     echo 'Installing and configuring firefox...'
     setup_firefox > /dev/null 2>&1
-
-    echo 'Installing and configuring jdownloader...'
-    setup_jdownloader > /dev/null 2>&1
 
     echo 'Installing and configuring qbittorrent...'
     setup_qbittorrent > /dev/null 2>&1
@@ -328,4 +323,6 @@ main()
     setup_gnome > /dev/null 2>&1
 }
 
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then main fi
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main
+fi
