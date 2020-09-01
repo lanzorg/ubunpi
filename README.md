@@ -6,7 +6,7 @@
         <img height="200" src="assets/logo.svg" alt="logo">
       </p>
       <h1>ubunpi</h1>
-      <p>Post installation script for Ubuntu Focal Fossa (20.04).</p>
+      <p>Post installation script for Ubuntu.</p>
     </td>
   </tr>
 </table>
